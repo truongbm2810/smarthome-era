@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; font-family: sans-serif; }
-        .card { background-color: #555; color: white; padding: 20px; border-radius: 15px; width: 200px; transition: 0.3s; }
+        
+        .card { 
+            background-color: #555; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            width: 200px; 
+            transition: 0.3s; 
+        }
         .card.active { background-color: #2e7d32; } 
+        
         .icon-box { width: 50px; height: 50px; background: #888; border-radius: 10px; margin-bottom: 10px; }
         h2 { margin: 0; font-size: 1.2rem; }
         p { margin: 5px 0; color: #ccc; }
+        
         .control-area { display: flex; align-items: center; gap: 10px; margin-top: 15px; }
         .power-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
     </style>
@@ -32,39 +42,47 @@
         let onlight = null;
         let offlight = null;
 
-        // Init để lấy cấu hình hành động từ Server
         eraWidget.init({
             onConfiguration: (config) => {
                 onlight = config.actions[0];
                 offlight = config.actions[1];
+            },
+            // [ĐỒNG BỘ]: Lắng nghe tín hiệu từ Server (khi bấm Button ngoài)
+            onValues: (values) => {
+                const val = values[0].value;
+                updateUI(val == 1);
             }
         });
 
-        let isOn = false;
-
-        // Hàm xử lý khi bấm nút nguồn
-        async function togglePower() {
-            isOn = !isOn;
+        // Hàm cập nhật giao diện (không gửi lệnh dư thừa)
+        function updateUI(isOn) {
             const card = document.getElementById('myCard');
-            
             if (isOn) {
-                // Hiển thị trạng thái Bật
                 card.classList.add('active');
                 document.getElementById('status').innerText = "On";
                 document.getElementById('power').innerText = "5 kWh";
                 document.getElementById('indicator').style.background = "#4caf50";
-                
-                // Gửi lệnh bật
-                if (onlight) await eraWidget.triggerAction(onlight.action, null);
             } else {
-                // Hiển thị trạng thái Tắt
                 card.classList.remove('active');
                 document.getElementById('status').innerText = "Off";
                 document.getElementById('power').innerText = "0 kWh";
                 document.getElementById('indicator').style.background = "grey";
-                
-                // Gửi lệnh tắt
-                if (offlight) await eraWidget.triggerAction(offlight.action, null);
+            }
+        }
+
+        // Hàm xử lý khi bấm nút trong IFrame
+        async function togglePower() {
+            const currentState = document.getElementById('myCard').classList.contains('active');
+            const newState = !currentState;
+            
+            // Cập nhật giao diện ngay lập tức
+            updateUI(newState);
+            
+            // Gửi lệnh lên Server
+            if (newState && onlight) {
+                await eraWidget.triggerAction(onlight.action, null);
+            } else if (!newState && offlight) {
+                await eraWidget.triggerAction(offlight.action, null);
             }
         }
     </script>

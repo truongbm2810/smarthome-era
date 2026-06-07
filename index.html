@@ -1,29 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <title>E-Ra Smart Home Control</title>
+    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        .log { background: #eee; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; width: 320px; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .sensor-box { display: flex; justify-content: space-between; margin-bottom: 20px; background: #eef6ff; padding: 15px; border-radius: 15px; text-align: center; }
+        .value { font-size: 20px; font-weight: bold; color: #007bff; }
+        .device-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 22px; transition: 0.3s; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+        input:checked + .slider { background: #2196F3; }
+        input:checked + .slider:before { transform: translateX(18px); }
     </style>
 </head>
 <body>
-    <h3>Hệ thống E-Ra</h3>
-    <div id="debug" class="log">Đang khởi tạo...</div>
-    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
-    <script>
-        const era = new EraWidget();
-        const debug = document.getElementById('debug');
 
-        era.init({
-            onConfiguration: (config) => {
-                debug.innerHTML = "<b>Cấu hình đã nhận:</b><br>";
-                debug.innerHTML += "Sensors: " + JSON.stringify(config.sensors) + "<br>";
-                debug.innerHTML += "Actions: " + JSON.stringify(config.action);
-            },
-            onValues: (values) => {
-                debug.innerHTML += "<br><br><b>Dữ liệu mới nhất từ ESP32:</b><br>" + JSON.stringify(values);
-            }
-        });
-    </script>
+<div class="card">
+    <div class="sensor-box">
+        <div>Nhiệt độ:<div class="value" id="t">--.-°C</div></div>
+        <div>Độ ẩm:<div class="value" id="h">--%</div></div>
+    </div>
+    
+    <div class="device-row">
+        <span>Đèn phòng ngủ</span>
+        <label class="switch"><input type="checkbox" id="sw-light" onchange="triggerAction(this, 'light')"><span class="slider"></span></label>
+    </div>
+    <div class="device-row">
+        <span>Quạt máy</span>
+        <label class="switch"><input type="checkbox" id="sw-fan" onchange="triggerAction(this, 'fan')"><span class="slider"></span></label>
+    </div>
+</div>
+
+<script>
+    const era = new EraWidget();
+    let actions = [];
+
+    era.init({
+        onConfiguration: (c) => {
+            actions = c.action || [];
+            console.log("Actions đã nhận:", actions);
+        },
+        onValues: (v) => {
+            // Hiển thị trực tiếp theo ID đã xác định từ ESP32
+            if (v["174236"]) document.getElementById('t').innerText = parseFloat(v["174236"].value).toFixed(1) + "°C";
+            if (v["174237"]) document.getElementById('h').innerText = Math.round(v["174237"].value) + "%";
+
+            // Đồng bộ trạng thái Switch dựa vào Action đã cấu hình
+            if (actions[0] && v[actions[0].id]) document.getElementById('sw-light').checked = (v[actions[0].id].value == 1);
+            if (actions[2] && v[actions[2].id]) document.getElementById('sw-fan').checked = (v[actions[2].id].value == 1);
+        }
+    });
+
+    async function triggerAction(el, type) {
+        let act = null;
+        if(type === 'light') act = el.checked ? actions[0] : actions[1];
+        if(type === 'fan') act = el.checked ? actions[2] : actions[3];
+        
+        if(act) await era.triggerAction(act.action, null);
+    }
+</script>
 </body>
 </html>

@@ -1,14 +1,27 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .log { background: #eee; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
 <body>
-    <h1 id="status">Đang đợi kết nối...</h1>
+    <h3>Hệ thống E-Ra</h3>
+    <div id="debug" class="log">Đang khởi tạo...</div>
     <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
     <script>
         const era = new EraWidget();
+        const debug = document.getElementById('debug');
+
         era.init({
-            onConfiguration: () => {
-                document.getElementById('status').innerText = "KẾT NỐI SDK THÀNH CÔNG!";
-                document.getElementById('status').style.color = "green";
+            onConfiguration: (config) => {
+                debug.innerHTML = "<b>Cấu hình đã nhận:</b><br>";
+                debug.innerHTML += "Sensors: " + JSON.stringify(config.sensors) + "<br>";
+                debug.innerHTML += "Actions: " + JSON.stringify(config.action);
+            },
+            onValues: (values) => {
+                debug.innerHTML += "<br><br><b>Dữ liệu mới nhất từ ESP32:</b><br>" + JSON.stringify(values);
             }
         });
     </script>

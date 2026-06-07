@@ -77,8 +77,6 @@
             },
             onValues: (values) => {
                 if (values[0]) updateUI(values[0].value == 1);
-                // Dòng này cập nhật thông số từ Server về. 
-                // Khi vừa gửi xong mà Server chưa trả về, giao diện đã được thay thế tạm thời bằng hàm sendSet bên dưới.
                 if (values[1]) document.getElementById('temp').innerText = parseFloat(values[1].value).toFixed(1);
                 if (values[2]) document.getElementById('humi').innerText = parseFloat(values[2].value).toFixed(0);
             }
@@ -120,7 +118,7 @@
             // Nếu người dùng không nhập gì mà bấm Gửi thì bỏ qua
             if (val === "") return;
 
-            // 1. ÉP HIỂN THỊ SỐ LÊN GIAO DIỆN NGAY LẬP TỨC (Thế chỗ cho dấu --)
+            // 1. ÉP HIỂN THỊ SỐ LÊN GIAO DIỆN NGAY LẬP TỨC 
             if (type === 'temp') {
                 document.getElementById('temp').innerText = parseFloat(val).toFixed(1);
             } else {
@@ -130,9 +128,10 @@
             // 2. Xóa trắng ô nhập liệu đi cho gọn
             document.getElementById(id).value = "";
 
-            // 3. Gửi lệnh lên server E-Ra (nếu bạn đã cấu hình Actions trên web)
+            // 3. Gửi lệnh lên server E-Ra
             if (actionObj) {
-                await eraWidget.triggerAction(actionObj.action, parseFloat(val));
+                // ĐÃ SỬA TẠI ĐÂY: Gói dữ liệu vào object { value: ... } để đè số 0 mặc định
+                await eraWidget.triggerAction(actionObj.action, { value: parseFloat(val) });
             } else {
                 console.log("Bạn chưa cấu hình Action gửi Nhiệt độ/Độ ẩm trên E-Ra. Chỉ test giao diện.");
             }

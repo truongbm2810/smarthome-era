@@ -2,104 +2,293 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ra Smart Home Dashboard</title>
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; height: 100vh; background-color: #333; font-family: sans-serif; }
-        
-        .card { 
-            background-color: #555; 
-            color: white; 
-            padding: 20px; 
-            border-radius: 15px; 
-            width: 180px; 
-            transition: 0.3s;
-            text-align: center;
+        /* Cài đặt giao diện chung */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .card.active { background-color: #2e7d32; } 
-        
-        .icon-box { width: 50px; height: 50px; background: #888; border-radius: 10px; margin: 0 auto 10px; }
-        h2 { margin: 0 0 10px 0; font-size: 1.2rem; }
-        p { margin: 5px 0; color: #ccc; }
-        
-        .control-area { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
-        .power-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
-        .val-big { font-size: 1.5rem; font-weight: bold; color: #fff; margin: 10px 0; }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Khung mô phỏng ứng dụng điện thoại */
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: #ffffff;
+            border-radius: 35px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* Phần Header màu xanh chứa thông tin cảm biến */
+        .header {
+            background: linear-gradient(135deg, #2cb1d8 0%, #1e90ff 100%);
+            padding: 40px 25px 60px 25px;
+            color: white;
+            border-bottom-left-radius: 35px;
+            border-bottom-right-radius: 35px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* Khối hiển thị Cảm biến DHT22 */
+        .sensor-card {
+            background-color: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .sensor-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .sensor-item:first-child {
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .sensor-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .sensor-label {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        /* Phần khu vực nút bấm điều khiển */
+        .devices-section {
+            padding: 25px;
+            margin-top: -30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        /* Lưới hiển thị các thiết bị */
+        .device-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Thẻ cấu hình từng thiết bị */
+        .device-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 20px 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 140px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .device-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .device-info h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        /* Cấu trúc nút gạt Toggle Switch */
+        .switch-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .switch-status {
+            font-size: 12px;
+            color: #888;
+            font-weight: bold;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2cb1d8;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 <body>
 
-    <div class="card" id="myCard">
-        <div class="icon-box"></div>
-        <h2>LED Bulb</h2>
-        <p id="status">Off</p>
-        <p id="power">0 kW</p>
-        <div class="control-area">
-            <div id="indicator" style="width: 10px; height: 10px; background: grey; border-radius: 50%;"></div>
-            <button class="power-btn" onclick="togglePower()">⏻</button>
+<div class="app-container">
+    <header class="header">
+        <h1>Xin chào,</h1>
+        <div class="sensor-card">
+            <div class="sensor-item">
+                <div class="sensor-value" id="temp-val">--.-°C</div>
+                <div class="sensor-label">🌡️ Nhiệt độ (V1)</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-value" id="hum-val">--%</div>
+                <div class="sensor-label">💧 Độ ẩm (V2)</div>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <div class="card">
-        <h2>Nhiệt độ</h2>
-        <div class="val-big"><span id="temp">--</span>°C</div>
-    </div>
-
-    <div class="card">
-        <h2>Độ ẩm</h2>
-        <div class="val-big"><span id="humi">--</span>%</div>
-    </div>
-
-    <script src="https://unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
-    <script>
-        const eraWidget = new EraWidget(); 
+    <main class="devices-section">
+        <h2 class="section-title">Điều khiển thiết bị</h2>
         
-        let onlight = null;       
-        let offlight = null;      
+        <div class="device-grid">
+            <div class="device-card">
+                <div class="device-icon">💡</div>
+                <div class="device-info">
+                    <h3>Đèn phòng ngủ</h3>
+                </div>
+                <div class="switch-container">
+                    <span class="switch-status" id="status-V0">OFF</span>
+                    <label class="switch">
+                        <input type="checkbox" id="switch-V0" onchange="controlDevice('V0', this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
 
-        eraWidget.init({
-            onConfiguration: (config) => {
-                // Nhận cấu hình Action để điều khiển đèn
-                onlight = config.actions[0];
-                offlight = config.actions[1];
-            },
-            onValues: (values) => {
-                // values[0] -> Nhận trạng thái Đèn từ V0
-                if (values[0]) updateUI(values[0].value == 1);
-                
-                // values[1] -> Nhận Nhiệt độ từ V1 (Hiển thị 1 số sau dấu phẩy)
-                if (values[1]) document.getElementById('temp').innerText = parseFloat(values[1].value).toFixed(1);
-                
-                // values[2] -> Nhận Độ ẩm từ V2 (Hiển thị 1 số sau dấu phẩy)
-                if (values[2]) document.getElementById('humi').innerText = parseFloat(values[2].value).toFixed(1);
-            }
-        });
+            <div class="device-card">
+                <div class="device-icon">🎐</div>
+                <div class="device-info">
+                    <h3>Quạt máy</h3>
+                </div>
+                <div class="switch-container">
+                    <span class="switch-status" id="status-V3">OFF</span>
+                    <label class="switch">
+                        <input type="checkbox" id="switch-V3" onchange="controlDevice('V3', this)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
 
-        function updateUI(isOn) {
-            const card = document.getElementById('myCard');
-            if (isOn) {
-                card.classList.add('active');
-                document.getElementById('status').innerText = "On";
-                document.getElementById('power').innerText = "5 kW";
-                document.getElementById('indicator').style.background = "#4caf50";
-            } else {
-                card.classList.remove('active');
-                document.getElementById('status').innerText = "Off";
-                document.getElementById('power').innerText = "0 kW";
-                document.getElementById('indicator').style.background = "grey";
-            }
+<script>
+    // Điền chính xác Token và Host của bạn giống trong code ESP32
+    const ERA_TOKEN = "a759fd1f-7068-451a-bbdc-f123cc0f5071";
+    const BASE_URL = "https://mqtt1.eoh.io/api/v1/auth"; 
+
+    // 1. HÀM ACTION: Gửi lệnh bật/tắt từ nút nhấn Web xuống E-Ra (V0, V3)
+    function controlDevice(pin, checkbox) {
+        const value = checkbox.checked ? 1 : 0;
+        const statusText = document.getElementById(`status-${pin}`);
+        
+        // Cập nhật nhanh trạng thái chữ hiển thị trên giao diện HTML
+        if (checkbox.checked) {
+            statusText.innerText = "ON";
+            statusText.style.color = "#2cb1d8";
+        } else {
+            statusText.innerText = "OFF";
+            statusText.style.color = "#888";
         }
 
-        async function togglePower() {
-            const currentState = document.getElementById('myCard').classList.contains('active');
-            const newState = !currentState;
-            
-            updateUI(newState);
-            
-            if (newState && onlight) {
-                await eraWidget.triggerAction(onlight.action, null);
-            } else if (!newState && offlight) {
-                await eraWidget.triggerAction(offlight.action, null);
-            }
-        }
-    </script>
+        // Gọi API của E-Ra để đẩy giá trị chân ảo lên Cloud -> ESP32 nhận lệnh qua ERA_WRITE
+        const url = `${BASE_URL}/virtualWrite?token=${ERA_TOKEN}&pin=${pin}&value=${value}`;
+        
+        fetch(url, { method: 'GET' })
+            .then(response => response.json())
+            .then(data => console.log(`Đã gửi lệnh tới ${pin}:`, data))
+            .catch(error => console.error("Lỗi gửi lệnh API:", error));
+    }
+
+    // 2. HÀM CẬP NHẬT: Tự động kéo dữ liệu Nhiệt độ (V1) & Độ ẩm (V2) từ E-Ra về Web
+    function requestSensorData() {
+        // Đọc giá trị Nhiệt độ V1
+        fetch(`${BASE_URL}/virtualRead?token=${ERA_TOKEN}&pin=V1`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.value !== undefined) {
+                    document.getElementById("temp-val").innerText = parseFloat(data.value).toFixed(1) + "°C";
+                }
+            })
+            .catch(err => console.error("Lỗi đọc V1:", err));
+
+        // Đọc giá trị Độ ẩm V2
+        fetch(`${BASE_URL}/virtualRead?token=${ERA_TOKEN}&pin=V2`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.value !== undefined) {
+                    document.getElementById("hum-val").innerText = Math.round(data.value) + "%";
+                }
+            })
+            .catch(err => console.error("Lỗi đọc V2:", err));
+    }
+
+    // Thiết lập chu kỳ tự động cập nhật lại dữ liệu cảm biến sau mỗi 3 giây
+    setInterval(requestSensorData, 3000);
+
+    // Chạy kích hoạt lần đầu ngay khi vừa mở trang web
+    requestSensorData();
+</script>
+
 </body>
 </html>

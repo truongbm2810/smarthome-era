@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Ra Smart Widget</title>
+    <title>E-Ra Smart Switch Widget</title>
     <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
     
     <style>
-        /* Tối ưu giao diện tự co giãn vừa vặn trong ô lưới Widget E-Ra */
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background-color: transparent; /* Nền trong suốt để tiệp với nền Dashboard */
+            background-color: transparent; /* Nền trong suốt tiệp màu với Dashboard */
             padding: 10px;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        /* Khối hiển thị Cảm biến DHT22 */
+        /* Khối hiển thị Cảm biến */
         .sensor-container {
             background: linear-gradient(135deg, #2cb1d8 0%, #1e90ff 100%);
             border-radius: 16px;
@@ -35,38 +33,22 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
-        .sensor-item {
-            text-align: center;
-            flex: 1;
-        }
+        .sensor-item { text-align: center; flex: 1; }
+        .sensor-item:first-child { border-right: 1px solid rgba(255,255,255,0.3); }
+        .sensor-value { font-size: 24px; font-weight: bold; margin-bottom: 3px; }
+        .sensor-label { font-size: 12px; opacity: 0.9; }
 
-        .sensor-item:first-child {
-            border-right: 1px solid rgba(255,255,255,0.3);
-        }
-
-        .sensor-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-
-        .sensor-label {
-            font-size: 12px;
-            opacity: 0.9;
-        }
-
-        /* Lưới nút bấm thiết bị */
+        /* Lưới hiển thị Switch công tắc */
         .device-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
 
-        /* Thẻ cấu hình từng nút */
         .device-card {
             background-color: #ffffff;
             border-radius: 16px;
-            padding: 12px;
+            padding: 15px 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
@@ -75,68 +57,29 @@
             border: 1px solid #eef2f5;
         }
 
-        .device-icon {
-            font-size: 24px;
-        }
+        .device-info h3 { font-size: 14px; color: #333; }
+        .switch-container { display: flex; justify-content: space-between; align-items: center; }
+        .switch-status { font-size: 12px; color: #888; font-weight: bold; }
 
-        .device-info h3 {
-            font-size: 13px;
-            color: #333;
-        }
-
-        /* Công tắc gạt Toggle Switch */
-        .switch-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .switch-status {
-            font-size: 11px;
-            color: #888;
-            font-weight: bold;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 22px;
-        }
-
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
+        /* Giao diện chuẩn Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 22px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 22px;
         }
-
         .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+            position: absolute; content: ""; height: 16px; width: 16px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
         }
+        input:checked + .slider { background-color: #2cb1d8; }
+        input:checked + .slider:before { transform: translateX(20px); }
 
-        input:checked + .slider {
-            background-color: #2cb1d8;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(18px);
+        /* Hộp Debug Log kiểm tra nhanh trạng thái kết nối */
+        #debug-log {
+            background-color: #222; color: #00ff00; font-family: monospace;
+            font-size: 11px; padding: 8px; border-radius: 8px;
+            max-height: 50px; overflow-y: auto;
         }
     </style>
 </head>
@@ -155,104 +98,126 @@
 
     <div class="device-grid">
         <div class="device-card">
-            <div class="device-icon">💡</div>
             <div class="device-info"><h3>Đèn ngủ</h3></div>
             <div class="switch-container">
                 <span class="switch-status" id="status-light">OFF</span>
                 <label class="switch">
-                    <input type="checkbox" id="switch-light" onchange="controlLight(this)">
+                    <input type="checkbox" id="switch-light" onchange="handleLightSwitch(this)">
                     <span class="slider"></span>
                 </label>
             </div>
         </div>
 
         <div class="device-card">
-            <div class="device-icon">🎐</div>
             <div class="device-info"><h3>Quạt máy</h3></div>
             <div class="switch-container">
                 <span class="switch-status" id="status-fan">OFF</span>
                 <label class="switch">
-                    <input type="checkbox" id="switch-fan" onchange="controlFan(this)">
+                    <input type="checkbox" id="switch-fan" onchange="handleFanSwitch(this)">
                     <span class="slider"></span>
                 </label>
             </div>
         </div>
     </div>
 
+    <div id="debug-log">Hệ thống: Đang kết nối SDK...</div>
+
 <script>
-    // 1. Khởi tạo đối tượng EraWidget (Sửa lại chính xác tên biến eraWidget)
+    // 1. Khởi tạo EraWidget theo đúng chuẩn
     const eraWidget = new EraWidget(); 
     
-    // Khai báo các biến lưu trữ Action cho Đèn và Quạt theo logic của bạn
     let onlight = null;
     let offlight = null;
     let onfan = null;
     let offfan = null;
-
-    // Mảng lưu cấu hình cảm biến để map dữ liệu tự động
     let configSensors = [];
 
-    // 2. Khởi tạo cấu hình và nhận diện các cổng gán trên E-Ra Dashboard
+    function printLog(msg) {
+        document.getElementById("debug-log").innerText = "Log: " + msg;
+    }
+
+    // 2. Cấu hình vòng lặp nhận và đồng bộ dữ liệu liên tục
     eraWidget.init({
         onConfiguration: (configuration) => {
-            // Lấy danh sách các Action bạn cài đặt ở cột bên phải Widget E-Ra
+            printLog("Đã đồng bộ cấu hình E-Ra thành công!");
+            
             const actions = configuration.action || [];
-            onlight = actions[0];  // Cấu hình Action thứ 1: Bật Đèn
-            offlight = actions[1]; // Cấu hình Action thứ 2: Tắt Đèn
-            onfan = actions[2];    // Cấu hình Action thứ 3: Bật Quạt
-            offfan = actions[3];   // Cấu hình Action thứ 4: Tắt Quạt
+            onlight = actions[0];  
+            offlight = actions[1]; 
+            onfan = actions[2];    
+            offfan = actions[3];   
 
-            // Lấy danh sách Cảm biến cấu hình
             configSensors = configuration.sensors || [];
         },
         onValues: (values) => {
-            // Cập nhật giá trị Nhiệt độ thời gian thực (Sensor thứ 1)
+            // A. Đọc và hiển thị dữ liệu Cảm biến DHT22
             if (configSensors[0] && values[configSensors[0].id]) {
-                const temp = parseFloat(values[configSensors[0].id].value).toFixed(1);
-                document.getElementById("temp-val").innerText = temp + "°C";
+                document.getElementById("temp-val").innerText = parseFloat(values[configSensors[0].id].value).toFixed(1) + "°C";
             }
-            // Cập nhật giá trị Độ ẩm thời gian thực (Sensor thứ 2)
             if (configSensors[1] && values[configSensors[1].id]) {
-                const hum = Math.round(values[configSensors[1].id].value);
-                document.getElementById("hum-val").innerText = hum + "%";
+                document.getElementById("hum-val").innerText = Math.round(values[configSensors[1].id].value) + "%";
+            }
+            
+            // B. ĐỒNG BỘ CHIỀU VỀ: Đọc trạng thái chân ảo từ mạch gửi lên để tự gạt Switch trên Web
+            // Đồng bộ Switch Đèn (V0)
+            if (onlight && values[onlight.id]) {
+                const currentLightState = parseInt(values[onlight.id].value);
+                const lightCheckbox = document.getElementById("switch-light");
+                const lightText = document.getElementById("status-light");
+                
+                // Cập nhật trạng thái nút (Không kích hoạt lại sự kiện onchange để tránh lặp lệnh)
+                lightCheckbox.checked = (currentLightState === 1);
+                lightText.innerText = (currentLightState === 1) ? "ON" : "OFF";
+                lightText.style.color = (currentLightState === 1) ? "#2cb1d8" : "#888";
+            }
+
+            // Đồng bộ Switch Quạt (V3)
+            if (onfan && values[onfan.id]) {
+                const currentFanState = parseInt(values[onfan.id].value);
+                const fanCheckbox = document.getElementById("switch-fan");
+                const fanText = document.getElementById("status-fan");
+                
+                fanCheckbox.checked = (currentFanState === 1);
+                fanText.innerText = (currentFanState === 1) ? "ON" : "OFF";
+                fanText.style.color = (currentFanState === 1) ? "#2cb1d8" : "#888";
             }
         }
     });
 
-    // 3. Hàm Action xử lý Bật/Tắt Đèn ngủ
-    async function controlLight(checkbox) {
-        const statusText = document.getElementById("status-light");
+    // 3. CHIỀU ĐI: Hàm gạt Switch Đèn điều khiển thiết bị
+    async function handleLightSwitch(checkbox) {
+        const lightText = document.getElementById("status-light");
+        lightText.innerText = checkbox.checked ? "ON" : "OFF";
+        lightText.style.color = checkbox.checked ? "#2cb1d8" : "#888";
+
         if (checkbox.checked) {
-            statusText.innerText = "ON";
-            statusText.style.color = "#2cb1d8";
             if (onlight) {
-                // Kích hoạt action bật đèn gửi xuống ESP32
-                await eraWidget.triggerAction(onlight.action, null);
+                printLog("Gửi lệnh: BẬT ĐÈN");
+                await eraWidget.triggerAction(onlight.action || onlight, null);
             }
         } else {
-            statusText.innerText = "OFF";
-            statusText.style.color = "#888";
             if (offlight) {
-                // Kích hoạt action tắt đèn gửi xuống ESP32
-                await eraWidget.triggerAction(offlight.action, null);
+                printLog("Gửi lệnh: TẮT ĐÈN");
+                await eraWidget.triggerAction(offlight.action || offlight, null);
             }
         }
     }
 
-    // 4. Hàm Action xử lý Bật/Tắt Quạt máy
-    async function controlFan(checkbox) {
-        const statusText = document.getElementById("status-fan");
+    // 4. CHIỀU ĐI: Hàm gạt Switch Quạt điều khiển thiết bị
+    async function handleFanSwitch(checkbox) {
+        const fanText = document.getElementById("status-fan");
+        fanText.innerText = checkbox.checked ? "ON" : "OFF";
+        fanText.style.color = checkbox.checked ? "#2cb1d8" : "#888";
+
         if (checkbox.checked) {
-            statusText.innerText = "ON";
-            statusText.style.color = "#2cb1d8";
             if (onfan) {
-                await eraWidget.triggerAction(onfan.action, null);
+                printLog("Gửi lệnh: BẬT QUẠT");
+                await eraWidget.triggerAction(onfan.action || onfan, null);
             }
         } else {
-            statusText.innerText = "OFF";
-            statusText.style.color = "#888";
             if (offfan) {
-                await eraWidget.triggerAction(offfan.action, null);
+                printLog("Gửi lệnh: TẮT QUẠT");
+                await eraWidget.triggerAction(offfan.action || offfan, null);
             }
         }
     }

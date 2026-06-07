@@ -23,10 +23,6 @@
         .control-area { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; }
         .power-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
         .val-big { font-size: 1.5rem; font-weight: bold; color: #fff; margin: 10px 0; }
-        
-        .input-area { margin-top: 10px; display: flex; justify-content: center; gap: 5px; }
-        input { width: 50px; padding: 5px; border-radius: 5px; border: none; }
-        button.send-btn { padding: 5px 8px; border-radius: 5px; border: none; cursor: pointer; background: #888; color: white; }
     </style>
 </head>
 <body>
@@ -45,19 +41,11 @@
     <div class="card">
         <h2>Nhiệt độ</h2>
         <div class="val-big"><span id="temp">--</span>°C</div>
-        <div class="input-area">
-            <input type="number" step="0.1" id="tempInput" placeholder="Set">
-            <button class="send-btn" onclick="sendSet('temp')">Gửi</button>
-        </div>
     </div>
 
     <div class="card">
         <h2>Độ ẩm</h2>
         <div class="val-big"><span id="humi">--</span>%</div>
-        <div class="input-area">
-            <input type="number" step="0.1" id="humiInput" placeholder="Set">
-            <button class="send-btn" onclick="sendSet('humi')">Gửi</button>
-        </div>
     </div>
 
     <script src="https://unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
@@ -66,22 +54,21 @@
         
         let onlight = null;       
         let offlight = null;      
-        let setTempAction = null; 
-        let setHumiAction = null; 
 
         eraWidget.init({
             onConfiguration: (config) => {
+                // Nhận cấu hình Action để điều khiển đèn
                 onlight = config.actions[0];
                 offlight = config.actions[1];
-                setTempAction = config.actions[2];
-                setHumiAction = config.actions[3];
             },
             onValues: (values) => {
-                // Cập nhật Đèn
+                // values[0] -> Nhận trạng thái Đèn từ V0
                 if (values[0]) updateUI(values[0].value == 1);
                 
-                // Hiển thị số thập phân (1 chữ số sau dấu phẩy) cho Nhiệt độ và Độ ẩm
+                // values[1] -> Nhận Nhiệt độ từ V1 (Hiển thị 1 số sau dấu phẩy)
                 if (values[1]) document.getElementById('temp').innerText = parseFloat(values[1].value).toFixed(1);
+                
+                // values[2] -> Nhận Độ ẩm từ V2 (Hiển thị 1 số sau dấu phẩy)
                 if (values[2]) document.getElementById('humi').innerText = parseFloat(values[2].value).toFixed(1);
             }
         });
@@ -111,28 +98,6 @@
                 await eraWidget.triggerAction(onlight.action, null);
             } else if (!newState && offlight) {
                 await eraWidget.triggerAction(offlight.action, null);
-            }
-        }
-
-        async function sendSet(type) {
-            const id = (type === 'temp') ? 'tempInput' : 'humiInput';
-            const actionObj = (type === 'temp') ? setTempAction : setHumiAction;
-            const val = document.getElementById(id).value;
-
-            if (val === "") return;
-            document.getElementById(id).value = "";
-
-            if (actionObj) {
-                await eraWidget.triggerAction(actionObj.action, { value: parseFloat(val) });
-                
-                // Cập nhật tạm lên màn hình dạng số thập phân khi vừa bấm Gửi
-                if (type === 'temp') {
-                    document.getElementById('temp').innerText = parseFloat(val).toFixed(1);
-                } else {
-                    document.getElementById('humi').innerText = parseFloat(val).toFixed(1);
-                }
-            } else {
-                console.log("Chưa cấu hình Action trên E-Ra.");
             }
         }
     </script>

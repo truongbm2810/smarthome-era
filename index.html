@@ -63,25 +63,36 @@
     <script src="https://unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
     <script>
         const eraWidget = new EraWidget(); 
-        let onlight = null;
-        let offlight = null;
-        let setTempAction = null;
-        let setHumiAction = null;
+        
+        // Các biến chứa hành động cấu hình từ E-Ra
+        let onlight = null;       // Action 0 -> Bật đèn (V0 = 1)
+        let offlight = null;      // Action 1 -> Tắt đèn (V0 = 0)
+        let setTempAction = null; // Action 2 -> Gửi V1
+        let setHumiAction = null; // Action 3 -> Gửi V2
 
         eraWidget.init({
             onConfiguration: (config) => {
+                // Nhận cấu hình từ tab Actions của Widget trên Web E-Ra
                 onlight = config.actions[0];
                 offlight = config.actions[1];
                 setTempAction = config.actions[2];
                 setHumiAction = config.actions[3];
             },
             onValues: (values) => {
+                // Hàm này tự động chạy khi Server E-Ra có dữ liệu mới (từ mạch gửi lên)
+                
+                // Cập nhật trạng thái đèn (Datastream 0 = V0)
                 if (values[0]) updateUI(values[0].value == 1);
+                
+                // Cập nhật số hiển thị Nhiệt độ (Datastream 1 = V1)
                 if (values[1]) document.getElementById('temp').innerText = parseFloat(values[1].value).toFixed(1);
+                
+                // Cập nhật số hiển thị Độ ẩm (Datastream 2 = V2)
                 if (values[2]) document.getElementById('humi').innerText = parseFloat(values[2].value).toFixed(0);
             }
         });
 
+        // Hàm thay đổi giao diện Nút bấm đèn
         function updateUI(isOn) {
             const card = document.getElementById('myCard');
             if (isOn) {
@@ -97,12 +108,15 @@
             }
         }
 
+        // Hàm xử lý khi bấm nút Bật/Tắt đèn
         async function togglePower() {
             const currentState = document.getElementById('myCard').classList.contains('active');
             const newState = !currentState;
             
+            // Đổi màu giao diện ngay lập tức cho mượt
             updateUI(newState);
             
+            // Gửi lệnh V0 xuống mạch
             if (newState && onlight) {
                 await eraWidget.triggerAction(onlight.action, null);
             } else if (!newState && offlight) {
@@ -110,30 +124,30 @@
             }
         }
 
+        // Hàm xử lý khi bấm nút "Gửi" Nhiệt độ hoặc Độ ẩm
         async function sendSet(type) {
             const id = (type === 'temp') ? 'tempInput' : 'humiInput';
             const actionObj = (type === 'temp') ? setTempAction : setHumiAction;
             const val = document.getElementById(id).value;
 
-            // Nếu người dùng không nhập gì mà bấm Gửi thì bỏ qua
+            // Nếu để trống thì không làm gì cả
             if (val === "") return;
 
-            // 1. ÉP HIỂN THỊ SỐ LÊN GIAO DIỆN NGAY LẬP TỨC 
-            if (type === 'temp') {
-                document.getElementById('temp').innerText = parseFloat(val).toFixed(1);
-            } else {
-                document.getElementById('humi').innerText = parseFloat(val).toFixed(0);
-            }
-
-            // 2. Xóa trắng ô nhập liệu đi cho gọn
+            // 1. Xóa chữ trong ô nhập đi cho sạch sẽ
             document.getElementById(id).value = "";
 
-            // 3. Gửi lệnh lên server E-Ra
+            // 2. Ép gửi thẳng số xuống mạch thông qua cấu trúc JSON {value: ...}
             if (actionObj) {
-                // ĐÃ SỬA TẠI ĐÂY: Gói dữ liệu vào object { value: ... } để đè số 0 mặc định
                 await eraWidget.triggerAction(actionObj.action, { value: parseFloat(val) });
+                
+                // Cập nhật tạm số vừa gõ lên màn hình (để hiển thị chờ tới khi mạch dội ngược data lại)
+                if (type === 'temp') {
+                    document.getElementById('temp').innerText = parseFloat(val).toFixed(1);
+                } else {
+                    document.getElementById('humi').innerText = parseFloat(val).toFixed(0);
+                }
             } else {
-                console.log("Bạn chưa cấu hình Action gửi Nhiệt độ/Độ ẩm trên E-Ra. Chỉ test giao diện.");
+                console.log("Chưa cấu hình Action trên E-Ra.");
             }
         }
     </script>

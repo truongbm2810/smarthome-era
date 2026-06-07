@@ -1,76 +1,16 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Ra Smart Home Control</title>
-    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background: #f0f2f5; display: flex; justify-content: center; padding-top: 20px; }
-        .card { background: white; width: 320px; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .sensor-box { display: flex; justify-content: space-between; margin-bottom: 20px; background: #eef6ff; padding: 15px; border-radius: 15px; }
-        .value { font-size: 20px; font-weight: bold; color: #007bff; }
-        .device-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 22px; transition: 0.3s; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
-        input:checked + .slider { background: #2196F3; }
-        input:checked + .slider:before { transform: translateX(18px); }
-    </style>
-</head>
+<html>
 <body>
-
-<div class="card">
-    <div class="sensor-box">
-        <div>Nhiệt độ: <div class="value" id="t">-°C</div></div>
-        <div>Độ ẩm: <div class="value" id="h">-%</div></div>
-    </div>
-    
-    <div class="device-row">
-        <span>Đèn ngủ</span>
-        <label class="switch"><input type="checkbox" id="sw-light" onchange="toggle(this, 'light')"><span class="slider"></span></label>
-    </div>
-    <div class="device-row">
-        <span>Quạt máy</span>
-        <label class="switch"><input type="checkbox" id="sw-fan" onchange="toggle(this, 'fan')"><span class="slider"></span></label>
-    </div>
-</div>
-
-<script>
-    const era = new EraWidget();
-    let config = { actions: [], sensors: [] };
-
-    era.init({
-        onConfiguration: (c) => {
-            config.actions = c.action || [];
-            config.sensors = c.sensors || [];
-            console.log("Cấu hình đã tải:", config);
-        },
-        onValues: (v) => {
-            // Hiển thị cảm biến (theo thứ tự khai báo trên E-Ra)
-            if(config.sensors[0] && v[config.sensors[0].id]) document.getElementById('t').innerText = v[config.sensors[0].id].value + "°C";
-            if(config.sensors[1] && v[config.sensors[1].id]) document.getElementById('h').innerText = v[config.sensors[1].id].value + "%";
-
-            // Đồng bộ trạng thái Switch
-            if(config.actions[0] && v[config.actions[0].id]) {
-                document.getElementById('sw-light').checked = (v[config.actions[0].id].value == 1);
+    <h1 id="status">Đang đợi kết nối...</h1>
+    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.1.3/src/index.js"></script>
+    <script>
+        const era = new EraWidget();
+        era.init({
+            onConfiguration: () => {
+                document.getElementById('status').innerText = "KẾT NỐI SDK THÀNH CÔNG!";
+                document.getElementById('status').style.color = "green";
             }
-            if(config.actions[2] && v[config.actions[2].id]) {
-                document.getElementById('sw-fan').checked = (v[config.actions[2].id].value == 1);
-            }
-        }
-    });
-
-    async function toggle(el, type) {
-        // Thứ tự action: 0=Bật đèn, 1=Tắt đèn, 2=Bật quạt, 3=Tắt quạt
-        let action = null;
-        if(type === 'light') action = el.checked ? config.actions[0] : config.actions[1];
-        if(type === 'fan') action = el.checked ? config.actions[2] : config.actions[3];
-        
-        if(action) await era.triggerAction(action.action, null);
-    }
-</script>
+        });
+    </script>
 </body>
 </html>

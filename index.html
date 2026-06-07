@@ -39,29 +39,50 @@
 <script>
     const era = new EraWidget();
     let actions = [];
+    let configLight, configTemp, configHumi, configFan;
 
     era.init({
         onConfiguration: (c) => {
-            actions = c.action || [];
+            // Đã sửa lại lỗi thiếu chữ 's'
+            actions = c.actions || [];
             console.log("Actions đã nhận:", actions);
+
+            // Gán biến tự động dựa theo cài đặt Realtime Configs trên Web
+            configLight = c.realtime_configs[0]; // V0 (Đèn)
+            configTemp = c.realtime_configs[1];  // V1 (Nhiệt độ)
+            configHumi = c.realtime_configs[2];  // V2 (Độ ẩm)
+            configFan = c.realtime_configs[3];   // V3 (Quạt)
         },
         onValues: (v) => {
-            // Hiển thị trực tiếp theo ID đã xác định từ ESP32
-            if (v["174236"]) document.getElementById('t').innerText = parseFloat(v["174236"].value).toFixed(1) + "°C";
-            if (v["174237"]) document.getElementById('h').innerText = Math.round(v["174237"].value) + "%";
+            // Cập nhật Nhiệt độ & Độ ẩm
+            if (configTemp && v[configTemp.id]) {
+                document.getElementById('t').innerText = parseFloat(v[configTemp.id].value).toFixed(1) + "°C";
+            }
+            if (configHumi && v[configHumi.id]) {
+                document.getElementById('h').innerText = Math.round(v[configHumi.id].value) + "%";
+            }
 
-            // Đồng bộ trạng thái Switch dựa vào Action đã cấu hình
-            if (actions[0] && v[actions[0].id]) document.getElementById('sw-light').checked = (v[actions[0].id].value == 1);
-            if (actions[2] && v[actions[2].id]) document.getElementById('sw-fan').checked = (v[actions[2].id].value == 1);
+            // Đồng bộ trạng thái 2 nút gạt (Switch) khi có lệnh từ mạch trả về
+            if (configLight && v[configLight.id]) {
+                document.getElementById('sw-light').checked = (v[configLight.id].value == 1);
+            }
+            if (configFan && v[configFan.id]) {
+                document.getElementById('sw-fan').checked = (v[configFan.id].value == 1);
+            }
         }
     });
 
     async function triggerAction(el, type) {
         let act = null;
+        // Dựa vào mảng Actions trên web: 0(Bật đèn), 1(Tắt đèn), 2(Bật quạt), 3(Tắt quạt)
         if(type === 'light') act = el.checked ? actions[0] : actions[1];
         if(type === 'fan') act = el.checked ? actions[2] : actions[3];
         
-        if(act) await era.triggerAction(act.action, null);
+        if(act) {
+            await era.triggerAction(act.action, null);
+        } else {
+            console.error("LỖI: Chưa tìm thấy Action. Hãy kiểm tra lại tab Actions trên web!");
+        }
     }
 </script>
 </body>
